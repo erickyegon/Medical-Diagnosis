@@ -1,0 +1,121 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+medic_env/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Environment Variables
+.env
+.env.local
+.env.production
+.env.staging
+
+# Logs
+*.log
+logs/
+log/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# User Data (IMPORTANT: Never commit user data)
+streamlit_ui/users.json
+user_data/
+patient_data/
+
+# Temporary Files
+tmp/
+temp/
+.tmp/
+
+# Testing
+.coverage
+.pytest_cache/
+.tox/
+.nox/
+htmlcov/
+.coverage.*
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+test_*.py
+*_test.py
+tests/
+
+# Documentation
+docs/_build/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Streamlit
+.streamlit/
+
+# Medical Data (CRITICAL: Never commit patient data)
+patient_records/
+medical_data/
+diagnosis_history/
+*.medical
+*.patient
+
+# API Keys and Secrets (CRITICAL: Never commit these)
+api_keys.json
+secrets.json
+firebase-config.json
+oauth-secrets.json
+
+# Backup Files
+*.bak
+*.backup
+backup_*/
+
+# SSL Certificates
+*.pem
+*.crt
+*.key
+ssl/

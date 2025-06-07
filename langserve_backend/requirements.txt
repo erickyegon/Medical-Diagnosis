@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+langserve
+langgraph
+langchain
+langchain-core
+requests
+streamlit
+sse_starlette
+pydantic
+dotenv

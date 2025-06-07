@@ -1,0 +1,156 @@
+version: '3.8'
+
+services:
+  # Backend API Service
+  backend:
+    build:
+      context: ./langserve_backend
+      dockerfile: Dockerfile
+    container_name: medical-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - SECRET_KEY=${SECRET_KEY:-default-secret-key-change-in-production}
+      - SESSION_TIMEOUT=${SESSION_TIMEOUT:-3600}
+      - MAX_LOGIN_ATTEMPTS=${MAX_LOGIN_ATTEMPTS:-3}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - medical-network
+
+  # Frontend UI Service
+  frontend:
+    build:
+      context: ./streamlit_ui
+      dockerfile: Dockerfile
+    container_name: medical-frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - ENVIRONMENT=production
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - medical-network
+
+  # Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: medical-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    networks:
+      - medical-network
+
+  # Database (Optional - for production)
+  database:
+    image: postgres:15-alpine
+    container_name: medical-db
+    environment:
+      - POSTGRES_DB=${DB_NAME:-medical_diagnostics}
+      - POSTGRES_USER=${DB_USER:-medical_user}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-secure_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-medical_user}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - medical-network
+
+  # Redis for Session Storage (Optional)
+  redis:
+    image: redis:7-alpine
+    container_name: medical-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password}
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - medical-network
+
+  # Monitoring (Optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: medical-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    restart: unless-stopped
+    networks:
+      - medical-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: medical-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    restart: unless-stopped
+    networks:
+      - medical-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  medical-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

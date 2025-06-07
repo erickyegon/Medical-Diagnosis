@@ -25,51 +25,100 @@ class AuthManager:
         auth_type: "local", "firebase", or "oauth"
         """
         self.auth_type = auth_type
-        self.users_file = "streamlit_ui/users.json"
+        # Get the directory where this script is located
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        self.users_file = os.path.join(current_dir, "users.json")
         self.ensure_users_file()
     
     def ensure_users_file(self):
-        """Create users file if it doesn't exist"""
-        if not os.path.exists(self.users_file):
-            default_users = {
-                "admin": {
-                    "password_hash": self.hash_password("admin123"),
-                    "email": "admin@medicalai.com",
-                    "role": "admin",
-                    "created_at": datetime.now().isoformat(),
-                    "last_login": None,
-                    "login_attempts": 0,
-                    "locked_until": None
-                },
-                "doctor": {
-                    "password_hash": self.hash_password("doctor123"),
-                    "email": "doctor@medicalai.com", 
-                    "role": "doctor",
-                    "created_at": datetime.now().isoformat(),
-                    "last_login": None,
-                    "login_attempts": 0,
-                    "locked_until": None
-                }
+        """Create users file if it doesn't exist, fallback to session storage"""
+        try:
+            # Try to create the directory and file
+            if self.users_file:
+                os.makedirs(os.path.dirname(self.users_file), exist_ok=True)
+
+                if not os.path.exists(self.users_file):
+                    default_users = self.get_default_users()
+                    with open(self.users_file, 'w') as f:
+                        json.dump(default_users, f, indent=2)
+        except Exception:
+            # Silently fall back to session storage - don't show error on startup
+            self.users_file = None
+
+    def get_default_users(self):
+        """Get default user accounts"""
+        return {
+            "admin": {
+                "password_hash": self.hash_password("admin123"),
+                "email": "admin@medicalai.com",
+                "role": "admin",
+                "created_at": datetime.now().isoformat(),
+                "last_login": None,
+                "login_attempts": 0,
+                "locked_until": None
+            },
+            "doctor": {
+                "password_hash": self.hash_password("doctor123"),
+                "email": "doctor@medicalai.com",
+                "role": "doctor",
+                "created_at": datetime.now().isoformat(),
+                "last_login": None,
+                "login_attempts": 0,
+                "locked_until": None
             }
-            with open(self.users_file, 'w') as f:
-                json.dump(default_users, f, indent=2)
+        }
     
     def hash_password(self, password: str) -> str:
         """Hash password using SHA-256"""
         return hashlib.sha256(password.encode()).hexdigest()
     
     def load_users(self) -> Dict:
-        """Load users from file"""
+        """Load users from file or session state"""
+        # Get default users
+        default_users = self.get_default_users()
+
+        # If file storage is not available, use session state
+        if self.users_file is None:
+            if 'users_data' not in st.session_state:
+                st.session_state.users_data = default_users
+            return st.session_state.users_data
+
+        # Try to load from session state first (for consistency)
+        if 'users_data' in st.session_state:
+            return st.session_state.users_data
+
+        # Try to load from file
         try:
-            with open(self.users_file, 'r') as f:
-                return json.load(f)
-        except:
-            return {}
-    
+            if os.path.exists(self.users_file):
+                with open(self.users_file, 'r') as f:
+                    users = json.load(f)
+                    # Store in session state for faster access
+                    st.session_state.users_data = users
+                    return users
+            else:
+                # File doesn't exist, use defaults
+                st.session_state.users_data = default_users
+                return default_users
+        except Exception:
+            # Error reading file, use session storage
+            if 'users_data' not in st.session_state:
+                st.session_state.users_data = default_users
+            return st.session_state.users_data
+
     def save_users(self, users: Dict):
-        """Save users to file"""
-        with open(self.users_file, 'w') as f:
-            json.dump(users, f, indent=2)
+        """Save users to file or session state"""
+        # Always save to session state as backup
+        st.session_state.users_data = users
+
+        if self.users_file is None:
+            # Only using session storage
+            return
+
+        try:
+            with open(self.users_file, 'w') as f:
+                json.dump(users, f, indent=2)
+        except Exception as e:
+            st.warning(f"Error saving users to file, using session storage: {str(e)}")
     
     def is_account_locked(self, username: str) -> bool:
         """Check if account is locked due to failed attempts"""

@@ -4,6 +4,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)](https://streamlit.io)
 [![LangChain](https://img.shields.io/badge/LangChain-Latest-yellow.svg)](https://langchain.com)
+[![Deploy to Render](https://img.shields.io/badge/Deploy%20to-Render-46E3B7.svg)](https://render.com)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > **A comprehensive AI-powered medical diagnostics platform that analyzes patient symptoms and provides intelligent diagnosis suggestions with professional-grade authentication and user management.**
@@ -255,7 +256,23 @@ streamlit run app.py --server.headless true
 
 ## 🚢 **Deployment**
 
-### **Docker Deployment**
+### **🌟 Render Deployment (Recommended)**
+```bash
+# 1. Push to GitHub
+git add .
+git commit -m "Deploy to Render"
+git push origin main
+
+# 2. Deploy on Render
+# - Go to render.com
+# - Create new Blueprint
+# - Connect GitHub repository
+# - Deploy automatically with render.yaml
+```
+
+**📋 Quick Deploy:** See [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) for detailed instructions.
+
+### **🐳 Docker Deployment**
 ```bash
 # Build and run with Docker Compose
 docker-compose up -d
@@ -265,7 +282,13 @@ docker build -t medical-backend ./langserve_backend
 docker build -t medical-frontend ./streamlit_ui
 ```
 
-### **Production Considerations**
+### **☁️ Other Cloud Platforms**
+- **AWS**: ECS, Lambda, or EC2
+- **Google Cloud**: Cloud Run or App Engine
+- **Azure**: Container Instances or App Service
+- **Heroku**: Web dynos with Procfile
+
+### **🔧 Production Considerations**
 - 🔒 Change default passwords
 - 🌐 Configure proper domain names
 - 📊 Set up monitoring and logging

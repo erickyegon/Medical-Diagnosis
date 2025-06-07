@@ -119,3 +119,5 @@ backup_*/
 *.crt
 *.key
 ssl/
+
+RENDER_DEPLOYMENT.md

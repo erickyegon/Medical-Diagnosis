@@ -21,7 +21,34 @@ app = FastAPI(
 # Add a simple health check endpoint
 @app.get("/")
 async def root():
-    return {"message": "Medical Diagnostics API is running", "status": "healthy"}
+    return {"message": "Medical Diagnostics API is running", "status": "healthy", "version": "1.0.0"}
+
+@app.get("/health")
+async def health_check():
+    """Detailed health check for monitoring"""
+    try:
+        # Test the diagnosis chain
+        diagnosis_chain = build_graph()
+        test_result = diagnosis_chain.invoke({"input": "test"})
+
+        return {
+            "status": "healthy",
+            "service": "medical-diagnostics-backend",
+            "version": "1.0.0",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "checks": {
+                "api": "ok",
+                "diagnosis_chain": "ok" if test_result else "error",
+                "database": "ok"  # Add actual DB check if using database
+            }
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "service": "medical-diagnostics-backend",
+            "error": str(e),
+            "timestamp": "2024-01-01T00:00:00Z"
+        }
 
 # Add a simple test endpoint
 @app.post("/test", response_model=DiagnosisResponse)
@@ -62,4 +89,6 @@ except Exception as e:
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

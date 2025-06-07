@@ -1,0 +1,72 @@
+services:
+  # Backend API Service
+  - type: web
+    name: medical-diagnostics-backend
+    env: python
+    buildCommand: |
+      cd langserve_backend
+      pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: |
+      cd langserve_backend
+      uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SESSION_TIMEOUT
+        value: "7200"
+      - key: MAX_LOGIN_ATTEMPTS
+        value: "5"
+      - key: LOCKOUT_DURATION
+        value: "600"
+    disk:
+      name: medical-backend-disk
+      mountPath: /app/data
+      sizeGB: 1
+
+  # Frontend UI Service
+  - type: web
+    name: medical-diagnostics-frontend
+    env: python
+    buildCommand: |
+      cd streamlit_ui
+      pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: |
+      cd streamlit_ui
+      streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    healthCheckPath: /
+    envVars:
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: medical-diagnostics-backend
+          property: host
+      - key: ENVIRONMENT
+        value: production
+      - key: STREAMLIT_SERVER_HEADLESS
+        value: "true"
+      - key: STREAMLIT_BROWSER_GATHER_USAGE_STATS
+        value: "false"
+    disk:
+      name: medical-frontend-disk
+      mountPath: /app/data
+      sizeGB: 1
+
+  # PostgreSQL Database (Optional - for production user storage)
+  - type: pserv
+    name: medical-diagnostics-db
+    env: postgresql
+    plan: starter
+    databaseName: medical_diagnostics
+    databaseUser: medical_user
+    ipAllowList: []
+
+  # Redis for Session Storage (Optional)
+  - type: redis
+    name: medical-diagnostics-redis
+    plan: starter
+    ipAllowList: []
